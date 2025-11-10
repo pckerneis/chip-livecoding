@@ -75,8 +75,7 @@ int audio_init(void) {
     for (int i = 0; i < numDevices; i++) {
         const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(i);
         if (deviceInfo->maxOutputChannels > 0 && 
-            (strstr(deviceInfo->name, preferredDeviceName) != NULL || 
-            strstr(Pa_GetHostApiInfo(deviceInfo->hostApi)->name, "ALSA") != NULL)) {
+            (strstr(deviceInfo->name, preferredDeviceName) != NULL)) {
             device = i;
             printf("Using preferred audio device: %s\n", deviceInfo->name);
             break;
