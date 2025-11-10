@@ -201,7 +201,6 @@ static int audio_callback(const void *input, void *output,
         return paComplete;
     }
 
-    AudioState *state = (AudioState *)user_data;
     float *out = (float *)output;
     
     // Initialize output to silence
