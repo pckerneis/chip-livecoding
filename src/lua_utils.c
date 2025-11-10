@@ -8,6 +8,10 @@
 #include <string.h>
 #include "audio.h"
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 // Compatibility for Lua 5.1
 #if LUA_VERSION_NUM == 501
 #ifndef luaL_newlib
