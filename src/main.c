@@ -68,11 +68,12 @@ int main(int argc, char *argv[]) {
     audio_state.L = L;
 
     // Initialize audio
-    // if (audio_init() != 0) {
-    //     fprintf(stderr, "Failed to initialize audio\n");
-    //     lua_close(L);
-    //     return 1;
-    // }
+    printf("Initializing audio...\n");
+    if (audio_init() != 0) {
+        fprintf(stderr, "Failed to initialize audio\n");
+        lua_close(L);
+        return 1;
+    }
 
     // Register audio module
     printf("1. About to open audio module\n");

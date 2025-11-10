@@ -127,17 +127,17 @@ int audio_init(void) {
     }
     
     // Start the stream
-    // err = Pa_StartStream(stream);
-    // if (err != paNoError) {
-    //     fprintf(stderr, "Error starting audio stream: %s\n", Pa_GetErrorText(err));
-    //     Pa_CloseStream(stream);
-    //     Pa_Terminate();
-    //     return 1;
-    // }
-
-    Pa_Sleep(100);
+    err = Pa_StartStream(stream);
+    if (err != paNoError) {
+        fprintf(stderr, "Error starting audio stream: %s\n", Pa_GetErrorText(err));
+        Pa_CloseStream(stream);
+        Pa_Terminate();
+        return 1;
+    }
     
-    audio_initialized = 1;
+    // Mark audio as initialized
+    printf("Audio initialized successfully\n");
+    Pa_Sleep(100);
     return 0;
 }
 
