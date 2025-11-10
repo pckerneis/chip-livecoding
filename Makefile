@@ -2,7 +2,7 @@
 UNAME_S := $(shell uname -s)
 
 # Common compiler flags
-CFLAGS = -Wall -Wextra -O2 -Iinclude
+CFLAGS = -Wall -Wextra -O2 -std=c99 -Iinclude
 LDFLAGS = -lm
 
 # Platform-specific settings
