@@ -78,7 +78,6 @@ int main(int argc, char *argv[]) {
     // Create and register the chip module
     printf("1. Setting up audio module...\n");
     lua_newtable(L);  // Create the chip table
-    luaL_setfuncs(L, NULL, 0);  // No functions yet
     lua_setglobal(L, "chip");  // Set as global 'chip'
     
     // Register audio functions
