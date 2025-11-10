@@ -69,6 +69,7 @@ int audio_init(void) {
     }
     
     const char *preferredDeviceName = "default";
+    int device = paNoDevice;
 
     // Try to find a preferred device first
     for (int i = 0; i < numDevices; i++) {
