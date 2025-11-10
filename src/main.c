@@ -65,6 +65,8 @@ int main(int argc, char *argv[]) {
     }
     luaL_openlibs(L);
 
+    audio_state.L = L;
+
     // Initialize audio
     if (audio_init() != 0) {
         fprintf(stderr, "Failed to initialize audio\n");

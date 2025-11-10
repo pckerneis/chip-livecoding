@@ -35,6 +35,11 @@ static int audio_callback(const void *input, void *output,
 
 // Initialize audio system
 int audio_init(void) {
+    if (!audio_state.L) {
+        fprintf(stderr, "Error: Lua state not initialized\n");
+        return 1;
+    }
+
     PaError err;
     
     if (audio_initialized) {
