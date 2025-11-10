@@ -228,6 +228,9 @@ static int audio_callback(const void *input, void *output,
                          void *user_data) {
     AudioState *state = (AudioState *)user_data;
     float *out = (float *)output;
+    (void)input;
+    (void)time_info;
+    (void)status_flags;
     
     // Initialize output to silence
     memset(out, 0, frame_count * sizeof(float));
@@ -299,7 +302,7 @@ static void *producer_func(void *arg)
             }
         }
         // Sleep briefly to yield
-        sleep_ms(1);
+        Pa_Sleep(1);
     }
 
 #ifdef _WIN32

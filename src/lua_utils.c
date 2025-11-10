@@ -80,6 +80,8 @@ int l_tri(lua_State *L) {
 int l_spl(lua_State *L) {
     const char *path = luaL_checkstring(L, 1);
     double t = luaL_checknumber(L, 2);
+    (void)path;
+    (void)t;
     
     // For now, return 0 as we'll implement sample loading later
     lua_pushnumber(L, 0.0);
