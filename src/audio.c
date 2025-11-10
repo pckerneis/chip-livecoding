@@ -79,7 +79,6 @@ int audio_init(void) {
     const char *preferredDeviceName = "default";
     int device = paNoDevice;
 
-    // In audio_init, after listing devices, add this:
     printf("\nTrying to find a working audio device...\n");
     for (int i = 0; i < numDevices; i++) {
         const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(i);
@@ -128,13 +127,13 @@ int audio_init(void) {
     }
     
     // Start the stream
-    err = Pa_StartStream(stream);
-    if (err != paNoError) {
-        fprintf(stderr, "Error starting audio stream: %s\n", Pa_GetErrorText(err));
-        Pa_CloseStream(stream);
-        Pa_Terminate();
-        return 1;
-    }
+    // err = Pa_StartStream(stream);
+    // if (err != paNoError) {
+    //     fprintf(stderr, "Error starting audio stream: %s\n", Pa_GetErrorText(err));
+    //     Pa_CloseStream(stream);
+    //     Pa_Terminate();
+    //     return 1;
+    // }
 
     Pa_Sleep(100);
     
