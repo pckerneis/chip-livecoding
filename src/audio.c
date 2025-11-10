@@ -40,6 +40,9 @@ int audio_init(void) {
         return 1;
     }
 
+    printf("Audio state: L=%p, sample_rate=%d, time=%.2f\n", 
+       audio_state.L, audio_state.sample_rate, audio_state.time);
+
     PaError err;
     
     if (audio_initialized) {
@@ -199,60 +202,44 @@ static int audio_callback(const void *input, void *output,
                          const PaStreamCallbackTimeInfo *time_info,
                          PaStreamCallbackFlags status_flags,
                          void *user_data) {
-    printf("Audio callback called\n");
     AudioState *state = (AudioState *)user_data;
-    if (!state || !state->L) {
-        printf("Error: Invalid audio state or Lua state\n");
-        return paComplete;
-    }
-
     float *out = (float *)output;
     
     // Initialize output to silence
     memset(out, 0, frame_count * sizeof(float));
     
-    // Get the Lua function from the stack
-    lua_State *L = state->L;
-    if (!L) {
-        return paContinue; // No Lua state available
+    // Safety checks
+    if (!state || !state->L) {
+        return paContinue;  // Keep trying but output silence
     }
-    
+
+    lua_State *L = state->L;
     lua_getglobal(L, "main");
     
     if (!lua_isfunction(L, -1)) {
-        // No main function defined, output silence
-        lua_pop(L, 1); // Pop the non-function value
-        return paContinue;
+        lua_pop(L, 1);  // Pop the non-function value
+        return paContinue;  // Output silence if no main function
     }
-    
+
     // Generate audio samples
     for (unsigned long i = 0; i < frame_count; i++) {
-        // Push the time argument
         lua_pushnumber(L, state->time);
         
-        // Call the Lua function with 1 argument and 1 result
         if (lua_pcall(L, 1, 1, 0) != 0) {
-            // Error in Lua code, output silence
             const char *err_msg = lua_tostring(L, -1);
             if (err_msg) {
-                fprintf(stderr, "Lua error: %s\n", err_msg);
-            } else {
-                fprintf(stderr, "Unknown Lua error\n");
+                fprintf(stderr, "Lua error in audio callback: %s\n", err_msg);
             }
-            lua_pop(L, 1); // Pop error message
-            out[i] = 0.0f;
-        } else {
-            // Get the result from the Lua function
-            if (lua_isnumber(L, -1)) {
-                double sample = lua_tonumber(L, -1);
-                // Apply volume and clamp to [-1.0, 1.0]
-                sample = fmax(-1.0, fmin(1.0, sample)) * state->volume;
-                out[i] = (float)sample;
-            }
-            lua_pop(L, 1); // Pop the result
+            lua_pop(L, 1);  // Pop error message
+            return paContinue;
         }
         
-        // Update time
+        if (lua_isnumber(L, -1)) {
+            double sample = lua_tonumber(L, -1);
+            out[i] = (float)(fmax(-1.0, fmin(1.0, sample)) * state->volume);
+        }
+        lua_pop(L, 1);  // Pop the result
+        
         state->time += 1.0 / state->sample_rate;
     }
     

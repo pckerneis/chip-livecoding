@@ -86,6 +86,10 @@ int main(int argc, char *argv[]) {
         audio_cleanup();
         return 1;
     }
+
+    // Debug
+    luaL_dostring(L, "function main(t) return math.sin(t) end");
+
     printf("Lua script loaded successfully\n");
 
     printf("Chip-Livecoding running. Press Ctrl+C to exit.\n");
