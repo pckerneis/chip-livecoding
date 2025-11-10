@@ -19,8 +19,8 @@ else
     # Linux settings
     CC = gcc
     TARGET = chip-livecoding
-    LDFLAGS += -lportaudio -lsndfile -llua5.4
-    CFLAGS += -I/usr/include/lua5.4
+    LDFLAGS += -lportaudio -lsndfile -llua5.1
+    CFLAGS += -I/usr/include/lua5.1
     RM = rm -f
     MKDIR = mkdir -p
 endif

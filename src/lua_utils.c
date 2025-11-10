@@ -4,7 +4,15 @@
 #include <math.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 #include "audio.h"
+
+// Compatibility for Lua 5.1
+#if LUA_VERSION_NUM == 501
+#ifndef luaL_newlib
+#define luaL_newlib(L,l) (lua_newtable(L), luaL_register(L,NULL,l))
+#endif
+#endif
 
 // Global time variable
 extern AudioState audio_state;
@@ -126,7 +134,8 @@ static const luaL_Reg chip_lib[] = {
 
 // Open the library
 int luaopen_audio(lua_State *L) {
-    luaL_newlib(L, chip_lib);
+    // Create a new table and register all functions
+    luaL_register(L, "chip", chip_lib);
     
     // Store audio state in the registry
     lua_pushlightuserdata(L, &audio_state);

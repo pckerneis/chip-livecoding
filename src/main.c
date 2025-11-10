@@ -4,6 +4,13 @@
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
+
+// Compatibility for Lua 5.1
+#if LUA_VERSION_NUM == 501
+#ifndef luaL_newlib
+#define luaL_newlib(L,l) (lua_newtable(L), luaL_register(L,NULL,l))
+#endif
+#endif
 #include "audio.h"
 
 // Windows-specific includes
@@ -66,8 +73,9 @@ int main(int argc, char *argv[]) {
     }
 
     // Register custom Lua functions
-    luaL_requiref(L, "chip", luaopen_audio, 1);
-    lua_pop(L, 1);
+    luaL_register(L, "chip", NULL);
+    luaopen_audio(L);
+    lua_settop(L, 0);
 
     // Load and run the script
     if (luaL_dofile(L, argv[1]) != LUA_OK) {

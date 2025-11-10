@@ -8,30 +8,19 @@ The generator function outputs a value in the range of [-1, 1] for each sample, 
 
 The environment is designed to be simple and easy to use, with a focus on minimalism and accessibility.
 
-## Prerequisites
-
-To build Chip-Livecoding, you will need:
-
-- A C compiler
-- Lua 5.4
-
-To run Chip-Livecoding, you will need:
-
-- A PocketCHIP or other Linux-based device
-
 ## Installation
 
 ### Prerequisites
 
 - C compiler (gcc or clang)
-- Lua 5.4 development files
+- Lua 5.1 development files
 - PortAudio development files
 - libsndfile development files
 
 On Debian/Ubuntu, you can install them with:
 
 ```bash
-sudo apt-get install build-essential lua5.4 liblua5.4-dev portaudio19-dev libsndfile1-dev
+sudo apt-get install build-essential lua5.1 liblua5.1-dev portaudio19-dev libsndfile1-dev
 ```
 
 ### Building
@@ -39,7 +28,7 @@ sudo apt-get install build-essential lua5.4 liblua5.4-dev portaudio19-dev libsnd
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/chip-livecoding.git
+git clone https://github.com/pckerneis/chip-livecoding.git
 cd chip-livecoding
 ```
 
