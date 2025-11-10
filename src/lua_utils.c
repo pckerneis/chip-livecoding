@@ -147,12 +147,12 @@ static const luaL_Reg chip_lib[] = {
 
 // Open the library
 int luaopen_audio(lua_State *L) {
-    // Create a new table and register all functions
-    luaL_register(L, "chip", chip_lib);
+    // Register all functions into the existing 'chip' table
+    luaL_register(L, NULL, chip_lib);
     
     // Store audio state in the registry
     lua_pushlightuserdata(L, &audio_state);
     lua_setfield(L, LUA_REGISTRYINDEX, "chip.audio_state");
     
-    return 1;
+    return 1;  // Return the 'chip' table
 }

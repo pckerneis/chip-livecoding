@@ -76,8 +76,8 @@ int main(int argc, char *argv[]) {
 
     // Register audio module
     printf("About to open audio module\n");
-    luaL_requiref(L, "chip", luaopen_audio, 1);  // This will call luaopen_audio and store the result in package.loaded
-    lua_pop(L, 1);  // Remove the module from the stack
+    luaL_register(L, "chip", NULL);  // Create empty 'chip' table
+    luaopen_audio(L);  // This will populate the 'chip' table with functions
     printf("Audio module loaded successfully\n");
 
     // Load and run the script
