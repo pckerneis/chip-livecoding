@@ -74,14 +74,11 @@ int main(int argc, char *argv[]) {
     //     return 1;
     // }
 
-    // Register custom Lua functions
-    printf("About to register chip library\n");
-    luaL_register(L, "chip", NULL);
-
-    printf("About to open audio\n");
-    luaopen_audio(L);
-    printf("About to set top\n");
-    lua_settop(L, 0);
+    // Register audio module
+    printf("About to open audio module\n");
+    luaL_requiref(L, "chip", luaopen_audio, 1);  // This will call luaopen_audio and store the result in package.loaded
+    lua_pop(L, 1);  // Remove the module from the stack
+    printf("Audio module loaded successfully\n");
 
     // Load and run the script
     printf("About to load script\n");
