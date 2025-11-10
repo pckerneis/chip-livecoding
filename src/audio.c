@@ -136,6 +136,7 @@ int audio_init(void) {
     }
     
     // Mark audio as initialized
+    audio_initialized = 1;
     printf("Audio initialized successfully\n");
     Pa_Sleep(100);
     return 0;
