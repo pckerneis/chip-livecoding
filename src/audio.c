@@ -215,38 +215,44 @@ static int audio_callback(const void *input, void *output,
 
     lua_State *L = state->L;
     
-    // Get the main function
-    lua_getglobal(L, "main");
-    if (!lua_isfunction(L, -1)) {
-        lua_pop(L, 1);  // Pop the non-function value
-        return paContinue;  // Output silence if no main function
-    }
+    // Call Lua per-sample. Important: push the function each iteration because
+    // lua_pcall consumes the function from the stack.
+    for (unsigned long i = 0; i < frame_count; i++) {
+        // Push function
+        lua_getglobal(L, "main");
+        if (!lua_isfunction(L, -1)) {
+            lua_pop(L, 1);  // Not a function; keep silence for this buffer
+            return paContinue;
+        }
 
-    // Call the Lua function once with the current time
-    lua_pushnumber(L, state->time);
-    
-    if (lua_pcall(L, 1, 1, 0) != 0) {
-        const char *err_msg = lua_tostring(L, -1);
-        if (err_msg) {
-            fprintf(stderr, "Lua error in audio callback: %s\n", err_msg);
+        // Push argument t
+        lua_pushnumber(L, state->time);
+
+        // Call main(t) -> sample
+        if (lua_pcall(L, 1, 1, 0) != 0) {
+            const char *err_msg = lua_tostring(L, -1);
+            if (err_msg) {
+                fprintf(stderr, "Lua error in audio callback: %s\n", err_msg);
+            }
+            lua_pop(L, 1);  // Pop error message
+            // On error, output silence for remaining samples in this buffer
+            // and continue; avoids spamming logs and stack issues.
+            break;
         }
-        lua_pop(L, 1);  // Pop error message
-        return paContinue;
-    }
-    
-    // If the function returned a number, use it for all samples in the buffer
-    if (lua_isnumber(L, -1)) {
-        double sample = lua_tonumber(L, -1);
-        float sample_value = (float)(fmax(-1.0, fmin(1.0, sample)) * state->volume);
-        for (unsigned long i = 0; i < frame_count; i++) {
-            out[i] = sample_value;
+
+        // Read result
+        if (lua_isnumber(L, -1)) {
+            double sample = lua_tonumber(L, -1);
+            out[i] = (float)(fmax(-1.0, fmin(1.0, sample)) * state->volume);
+        } else {
+            // Non-number result -> silence for this sample
+            out[i] = 0.0f;
         }
+        lua_pop(L, 1);  // Pop result
+
+        // Advance time per-sample
+        state->time += 1.0 / state->sample_rate;
     }
-    
-    lua_pop(L, 1);  // Pop the result
-    
-    // Update time for the next callback
-    state->time += frame_count / state->sample_rate;
     
     return paContinue;
 }
