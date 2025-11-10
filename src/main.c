@@ -76,9 +76,29 @@ int main(int argc, char *argv[]) {
 
     // Register audio module
     printf("1. About to open audio module\n");
-    luaL_register(L, "chip", NULL);  // Create empty 'chip' table
-    printf("2. Created chip table\n");
+    
+    // Check stack before luaL_register
+    printf("Stack before luaL_register (top=%d):\n", lua_gettop(L));
+    for (int i = 1; i <= lua_gettop(L); i++) {
+        printf("  %d: %s\n", i, lua_typename(L, lua_type(L, i)));
+    }
+    
+    // Try creating the module using lua_newtable instead
+    printf("Creating chip table...\n");
+    lua_newtable(L);  // Create new table
+    lua_setglobal(L, "chip");  // Set as global 'chip'
+    
+    // Now get the table back and call luaopen_audio
+    printf("Getting chip table...\n");
+    lua_getglobal(L, "chip");
+    if (!lua_istable(L, -1)) {
+        printf("ERROR: Failed to get chip table\n");
+        return 1;
+    }
+    
+    printf("Calling luaopen_audio...\n");
     luaopen_audio(L);  // This will populate the 'chip' table with functions
+    
     printf("3. Audio module loaded successfully\n");
 
     // Load and run the script
