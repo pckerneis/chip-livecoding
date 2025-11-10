@@ -106,6 +106,9 @@ int main(int argc, char *argv[]) {
     lua_setglobal(L, "main");
     printf("3. Script loaded successfully\n");
 
+    // Save script path for live reload
+    snprintf(audio_state.script_path, sizeof(audio_state.script_path), "%s", argv[1]);
+
     // Start producer thread to pre-render audio into the ring buffer
     if (audio_start_producer() != 0) {
         fprintf(stderr, "Failed to start audio producer\n");

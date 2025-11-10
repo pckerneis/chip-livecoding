@@ -6,6 +6,7 @@
 #include <time.h>
 #include <string.h>
 #include "audio.h"
+#include <sys/stat.h>
 
 // Windows-specific includes
 #ifdef _WIN32
@@ -266,8 +267,31 @@ static void *producer_func(void *arg)
     AudioState *state = (AudioState *)arg;
     lua_State *L = state->L;
     const double dt = 1.0 / (double)state->sample_rate;
+    struct stat st;
 
     while (state->producer_running) {
+        // Check for script changes and hot-reload
+        if (state->script_path[0] != '\0') {
+            if (stat(state->script_path, &st) == 0) {
+                long mtime = (long)st.st_mtime;
+                if (state->script_mtime != 0 && mtime != state->script_mtime) {
+                    // Reload script
+                    if (luaL_dofile(L, state->script_path) == 0 && lua_isfunction(L, -1)) {
+                        lua_setglobal(L, "main");
+                        // Reset ring buffer to avoid mixing old/new
+                        state->rb_read = state->rb_write = state->rb_count = 0;
+                        state->script_mtime = mtime;
+                    } else {
+                        // On error, pop error and continue with previous main
+                        if (!lua_isfunction(L, -1)) {
+                            lua_pop(L, 1);
+                        }
+                    }
+                } else if (state->script_mtime == 0) {
+                    state->script_mtime = mtime;
+                }
+            }
+        }
         // Fill up to one buffer worth when space available
         while (state->producer_running && state->rb_count <= state->rb_size - (unsigned int)state->buffer_size) {
             // Call Lua per-sample for one buffer

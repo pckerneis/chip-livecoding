@@ -16,6 +16,9 @@ typedef struct AudioState {
     volatile unsigned int rb_write; // write index
     volatile unsigned int rb_count; // number of samples available
     volatile int producer_running;
+    // Live reload support
+    char script_path[256];
+    long script_mtime;
 } AudioState;
 
 extern AudioState audio_state;
