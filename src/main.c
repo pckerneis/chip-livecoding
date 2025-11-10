@@ -68,11 +68,11 @@ int main(int argc, char *argv[]) {
     audio_state.L = L;
 
     // Initialize audio
-    if (audio_init() != 0) {
-        fprintf(stderr, "Failed to initialize audio\n");
-        lua_close(L);
-        return 1;
-    }
+    // if (audio_init() != 0) {
+    //     fprintf(stderr, "Failed to initialize audio\n");
+    //     lua_close(L);
+    //     return 1;
+    // }
 
     // Register custom Lua functions
     luaL_register(L, "chip", NULL);
