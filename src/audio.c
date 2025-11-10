@@ -68,14 +68,29 @@ int audio_init(void) {
                deviceInfo->maxOutputChannels);
     }
     
-    // Try to find a suitable output device
-    PaDeviceIndex device = paNoDevice;
+    const char *preferredDeviceName = "default";
+
+    // Try to find a preferred device first
     for (int i = 0; i < numDevices; i++) {
         const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(i);
-        if (deviceInfo->maxOutputChannels > 0) {
+        if (deviceInfo->maxOutputChannels > 0 && 
+            (strstr(deviceInfo->name, preferredDeviceName) != NULL || 
+            strstr(Pa_GetHostApiInfo(deviceInfo->hostApi)->name, "ALSA") != NULL)) {
             device = i;
-            printf("Using audio device: %s\n", deviceInfo->name);
+            printf("Using preferred audio device: %s\n", deviceInfo->name);
             break;
+        }
+    }
+
+    // If preferred device not found, fall back to any output device
+    if (device == paNoDevice) {
+        for (int i = 0; i < numDevices; i++) {
+            const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(i);
+            if (deviceInfo->maxOutputChannels > 0) {
+                device = i;
+                printf("Falling back to audio device: %s\n", deviceInfo->name);
+                break;
+            }
         }
     }
     
@@ -119,6 +134,8 @@ int audio_init(void) {
         Pa_Terminate();
         return 1;
     }
+
+    Pa_Sleep(100);
     
     audio_initialized = 1;
     return 0;
