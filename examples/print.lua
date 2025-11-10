@@ -1,8 +1,11 @@
 -- Simple print example
-function main(t)
+local has_printed = false
+
+local function main(t)
     -- Print only once to avoid flooding the console
-    if t < 0.1 then
+    if not has_printed then
         chip.print("Hello from Lua! Time: " .. t)
+        has_printed = true
     end
     return 0  -- Return 0 as a silent audio sample
 end
