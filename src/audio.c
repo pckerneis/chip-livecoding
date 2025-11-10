@@ -203,7 +203,7 @@ static int audio_callback(const void *input, void *output,
         lua_pushnumber(L, state->time);
         
         // Call the Lua function with 1 argument and 1 result
-        if (lua_pcall(L, 1, 1, 0) != LUA_OK) {
+        if (lua_pcall(L, 1, 1, 0) != 0) {
             // Error in Lua code, output silence
             const char *err_msg = lua_tostring(L, -1);
             if (err_msg) {

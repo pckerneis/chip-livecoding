@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
     lua_settop(L, 0);
 
     // Load and run the script
-    if (luaL_dofile(L, argv[1]) != LUA_OK) {
+    if (luaL_dofile(L, argv[1]) != 0) {
         fprintf(stderr, "Error loading script: %s\n", lua_tostring(L, -1));
         lua_close(L);
         audio_cleanup();
