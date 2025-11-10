@@ -84,9 +84,11 @@ int main(int argc, char *argv[]) {
         audio_cleanup();
         return 1;
     }
+    printf("Lua script loaded successfully\n");
 
     printf("Chip-Livecoding running. Press Ctrl+C to exit.\n");
 
+    printf("Entering main loop...\n");
     // Main loop
     while (running) {
         // Process audio

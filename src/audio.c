@@ -136,7 +136,9 @@ int audio_init(void) {
 
 // Process audio (called in the main loop)
 int audio_process(void) {
+    printf("Audio process called\n");
     if (!audio_initialized) {
+        printf("Audio not initialized\n");
         return 1;
     }
     
@@ -192,6 +194,13 @@ static int audio_callback(const void *input, void *output,
                          const PaStreamCallbackTimeInfo *time_info,
                          PaStreamCallbackFlags status_flags,
                          void *user_data) {
+    printf("Audio callback called\n");
+    AudioState *state = (AudioState *)user_data;
+    if (!state || !state->L) {
+        printf("Error: Invalid audio state or Lua state\n");
+        return paComplete;
+    }
+
     AudioState *state = (AudioState *)user_data;
     float *out = (float *)output;
     
