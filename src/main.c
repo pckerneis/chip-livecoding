@@ -36,6 +36,7 @@ static BOOL WINAPI console_handler(DWORD signal) {
 }
 #else
 void handle_signal(int sig) {
+    (void)sig;
     running = false;
 }
 #endif

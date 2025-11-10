@@ -10,10 +10,6 @@
 // Windows-specific includes
 #ifdef _WIN32
 #include <windows.h>
-#define sleep_ms(ms) Sleep(ms)
-#else
-#include <unistd.h>
-#define sleep_ms(ms) usleep((ms) * 1000)
 #endif
 
 // Audio settings
@@ -95,7 +91,7 @@ int audio_init(void) {
                deviceInfo->maxOutputChannels);
     }
     
-    const char *preferredDeviceName = "default";
+    /* removed unused preferredDeviceName */
     int device = paNoDevice;
 
     printf("\nTrying to find a working audio device...\n");
@@ -177,7 +173,7 @@ int audio_process(void) {
     }
     
     // Small sleep to prevent busy-waiting
-    sleep_ms(10);
+    Pa_Sleep(10);
     
     return 0;
 }
