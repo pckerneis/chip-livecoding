@@ -75,49 +75,38 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Register audio module
-    printf("1. About to open audio module\n");
-    
-    // Check stack before luaL_register
-    printf("Stack before luaL_register (top=%d):\n", lua_gettop(L));
-    for (int i = 1; i <= lua_gettop(L); i++) {
-        printf("  %d: %s\n", i, lua_typename(L, lua_type(L, i)));
-    }
-    
-    // Try creating the module using lua_newtable instead
-    printf("Creating chip table...\n");
-    lua_newtable(L);  // Create new table
+    // Create and register the chip module
+    printf("1. Setting up audio module...\n");
+    lua_newtable(L);  // Create the chip table
+    luaL_setfuncs(L, NULL, 0);  // No functions yet
     lua_setglobal(L, "chip");  // Set as global 'chip'
     
-    // Now get the table back and call luaopen_audio
-    printf("Getting chip table...\n");
+    // Register audio functions
     lua_getglobal(L, "chip");
-    if (!lua_istable(L, -1)) {
-        printf("ERROR: Failed to get chip table\n");
-        return 1;
-    }
-    
-    printf("Calling luaopen_audio...\n");
     luaopen_audio(L);  // This will populate the 'chip' table with functions
+    lua_pop(L, 1);  // Pop the chip table
     
-    printf("3. Audio module loaded successfully\n");
-
-    // Load and run the script
-    printf("About to load script\n");
+    printf("2. Loading script: %s\n", argv[1]);
     if (luaL_dofile(L, argv[1]) != 0) {
         fprintf(stderr, "Error loading script: %s\n", lua_tostring(L, -1));
         lua_close(L);
         audio_cleanup();
         return 1;
     }
-
-    // Debug
-    luaL_dostring(L, "function main(t) return math.sin(t) end");
-
-    printf("Lua script loaded successfully\n");
+    
+    // The script should return a function, which we'll store as 'main'
+    if (!lua_isfunction(L, -1)) {
+        fprintf(stderr, "Script must return a function\n");
+        lua_close(L);
+        audio_cleanup();
+        return 1;
+    }
+    
+    // Store the returned function as 'main' in the global table
+    lua_setglobal(L, "main");
+    printf("3. Script loaded successfully\n");
 
     printf("Chip-Livecoding running. Press Ctrl+C to exit.\n");
-
     printf("Entering main loop...\n");
     // Main loop
     while (running) {
