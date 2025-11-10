@@ -9,6 +9,13 @@ typedef struct AudioState {
     int sample_rate;
     int buffer_size;
     float volume;
+    // Ring buffer for pre-rendered audio (mono)
+    float *rb_data;
+    unsigned int rb_size;     // total samples capacity
+    volatile unsigned int rb_read;  // read index
+    volatile unsigned int rb_write; // write index
+    volatile unsigned int rb_count; // number of samples available
+    volatile int producer_running;
 } AudioState;
 
 extern AudioState audio_state;
@@ -24,6 +31,10 @@ void audio_cleanup(void);
 
 // Lua API functions
 int luaopen_audio(lua_State *L);
+
+// Producer control
+int audio_start_producer(void);
+void audio_stop_producer(void);
 
 // Audio generation functions exposed to Lua
 int l_sin(lua_State *L);

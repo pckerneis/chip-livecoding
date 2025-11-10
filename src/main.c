@@ -105,6 +105,14 @@ int main(int argc, char *argv[]) {
     lua_setglobal(L, "main");
     printf("3. Script loaded successfully\n");
 
+    // Start producer thread to pre-render audio into the ring buffer
+    if (audio_start_producer() != 0) {
+        fprintf(stderr, "Failed to start audio producer\n");
+        audio_cleanup();
+        lua_close(L);
+        return 1;
+    }
+
     printf("Chip-Livecoding running. Press Ctrl+C to exit.\n");
     printf("Entering main loop...\n");
     // Main loop

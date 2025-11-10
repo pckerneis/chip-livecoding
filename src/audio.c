@@ -26,6 +26,16 @@ AudioState audio_state = {0};
 static PaStream *stream = NULL;
 static int audio_initialized = 0;
 
+// Threading
+#ifdef _WIN32
+static HANDLE producer_thread = NULL;
+static DWORD WINAPI producer_func(LPVOID arg);
+#else
+#include <pthread.h>
+static pthread_t producer_thread;
+static void *producer_func(void *arg);
+#endif
+
 // Forward declarations
 static int audio_callback(const void *input, void *output,
                          unsigned long frame_count,
@@ -64,6 +74,15 @@ int audio_init(void) {
     audio_state.buffer_size = FRAMES_PER_BUFFER;
     audio_state.time = 0.0;
     audio_state.volume = 0.5f; // Default volume
+    // Allocate ring buffer (8 buffers worth)
+    if (!audio_state.rb_data) {
+        audio_state.rb_size = (unsigned int)(audio_state.buffer_size * 8);
+        audio_state.rb_data = (float *)calloc(audio_state.rb_size, sizeof(float));
+        audio_state.rb_read = 0;
+        audio_state.rb_write = 0;
+        audio_state.rb_count = 0;
+        audio_state.producer_running = 0;
+    }
     
     // List available devices
     printf("Available audio devices:\n");
@@ -165,6 +184,8 @@ int audio_process(void) {
 
 // Clean up audio resources
 void audio_cleanup(void) {
+    // Stop producer first
+    audio_stop_producer();
     if (!audio_initialized) {
         return; // Already cleaned up
     }
@@ -194,6 +215,13 @@ void audio_cleanup(void) {
     }
     
     audio_initialized = 0;
+    // Free ring buffer
+    if (audio_state.rb_data) {
+        free(audio_state.rb_data);
+        audio_state.rb_data = NULL;
+        audio_state.rb_size = 0;
+        audio_state.rb_read = audio_state.rb_write = audio_state.rb_count = 0;
+    }
 }
 
 // Audio callback function
@@ -208,51 +236,111 @@ static int audio_callback(const void *input, void *output,
     // Initialize output to silence
     memset(out, 0, frame_count * sizeof(float));
     
-    // Safety checks
-    if (!state || !state->L) {
-        return paContinue;  // Keep trying but output silence
+    // Safety checks (no Lua access here)
+    if (!state) {
+        return paContinue;
     }
 
-    lua_State *L = state->L;
-    
-    // Call Lua per-sample. Important: push the function each iteration because
-    // lua_pcall consumes the function from the stack.
-    for (unsigned long i = 0; i < frame_count; i++) {
-        // Push function
-        lua_getglobal(L, "main");
-        if (!lua_isfunction(L, -1)) {
-            lua_pop(L, 1);  // Not a function; keep silence for this buffer
-            return paContinue;
-        }
-
-        // Push argument t
-        lua_pushnumber(L, state->time);
-
-        // Call main(t) -> sample
-        if (lua_pcall(L, 1, 1, 0) != 0) {
-            const char *err_msg = lua_tostring(L, -1);
-            if (err_msg) {
-                fprintf(stderr, "Lua error in audio callback: %s\n", err_msg);
-            }
-            lua_pop(L, 1);  // Pop error message
-            // On error, output silence for remaining samples in this buffer
-            // and continue; avoids spamming logs and stack issues.
+    // Pull from ring buffer
+    unsigned long needed = frame_count;
+    unsigned long i = 0;
+    while (i < needed) {
+        if (state->rb_count == 0) {
+            // Underrun: leave remaining zeros
             break;
         }
-
-        // Read result
-        if (lua_isnumber(L, -1)) {
-            double sample = lua_tonumber(L, -1);
-            out[i] = (float)(fmax(-1.0, fmin(1.0, sample)) * state->volume);
-        } else {
-            // Non-number result -> silence for this sample
-            out[i] = 0.0f;
-        }
-        lua_pop(L, 1);  // Pop result
-
-        // Advance time per-sample
-        state->time += 1.0 / state->sample_rate;
+        float s = state->rb_data[state->rb_read];
+        out[i++] = s;
+        state->rb_read = (state->rb_read + 1) % state->rb_size;
+        state->rb_count--;
     }
-    
     return paContinue;
+}
+
+// Producer thread: fills ring buffer by calling Lua main(t)
+#ifdef _WIN32
+static DWORD WINAPI producer_func(LPVOID arg)
+#else
+static void *producer_func(void *arg)
+#endif
+{
+    AudioState *state = (AudioState *)arg;
+    lua_State *L = state->L;
+    const double dt = 1.0 / (double)state->sample_rate;
+
+    while (state->producer_running) {
+        // Fill up to one buffer worth when space available
+        while (state->producer_running && state->rb_count <= state->rb_size - (unsigned int)state->buffer_size) {
+            // Call Lua per-sample for one buffer
+            for (int n = 0; n < state->buffer_size; n++) {
+                // Push function
+                lua_getglobal(L, "main");
+                if (!lua_isfunction(L, -1)) {
+                    lua_pop(L, 1);
+                    // push silence
+                    state->rb_data[state->rb_write] = 0.0f;
+                } else {
+                    lua_pushnumber(L, state->time);
+                    if (lua_pcall(L, 1, 1, 0) != 0) {
+                        // error -> silence
+                        lua_pop(L, 1);
+                        state->rb_data[state->rb_write] = 0.0f;
+                    } else {
+                        float sample = 0.0f;
+                        if (lua_isnumber(L, -1)) {
+                            double v = lua_tonumber(L, -1);
+                            if (v > 1.0) v = 1.0;
+                            if (v < -1.0) v = -1.0;
+                            sample = (float)(v * state->volume);
+                        }
+                        lua_pop(L, 1);
+                        state->rb_data[state->rb_write] = sample;
+                    }
+                }
+                state->rb_write = (state->rb_write + 1) % state->rb_size;
+                state->rb_count++;
+                state->time += dt;
+            }
+        }
+        // Sleep briefly to yield
+        sleep_ms(1);
+    }
+
+#ifdef _WIN32
+    return 0;
+#else
+    return NULL;
+#endif
+}
+
+int audio_start_producer(void) {
+    if (!audio_initialized || audio_state.producer_running) return 0;
+    audio_state.producer_running = 1;
+#ifdef _WIN32
+    producer_thread = CreateThread(NULL, 0, producer_func, &audio_state, 0, NULL);
+    if (producer_thread == NULL) {
+        audio_state.producer_running = 0;
+        return 1;
+    }
+#else
+    if (pthread_create(&producer_thread, NULL, producer_func, &audio_state) != 0) {
+        audio_state.producer_running = 0;
+        return 1;
+    }
+#endif
+    return 0;
+}
+
+void audio_stop_producer(void) {
+    if (!audio_state.producer_running) return;
+    audio_state.producer_running = 0;
+#ifdef _WIN32
+    if (producer_thread) {
+        WaitForSingleObject(producer_thread, INFINITE);
+        CloseHandle(producer_thread);
+        producer_thread = NULL;
+    }
+#else
+    pthread_join(producer_thread, NULL);
+#endif
 }
