@@ -147,12 +147,23 @@ static const luaL_Reg chip_lib[] = {
 
 // Open the library
 int luaopen_audio(lua_State *L) {
+    printf("luaopen_audio: Starting...\n");
+    
+    // Check if we have a table on the stack
+    if (!lua_istable(L, -1)) {
+        printf("luaopen_audio: ERROR: Expected table on stack, got %s\n", lua_typename(L, lua_type(L, -1)));
+        return 0;
+    }
+    
+    printf("luaopen_audio: Registering functions...\n");
     // Register all functions into the existing 'chip' table
     luaL_register(L, NULL, chip_lib);
     
+    printf("luaopen_audio: Storing audio state...\n");
     // Store audio state in the registry
     lua_pushlightuserdata(L, &audio_state);
     lua_setfield(L, LUA_REGISTRYINDEX, "chip.audio_state");
     
+    printf("luaopen_audio: Done\n");
     return 1;  // Return the 'chip' table
 }

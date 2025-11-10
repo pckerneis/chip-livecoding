@@ -75,10 +75,11 @@ int main(int argc, char *argv[]) {
     // }
 
     // Register audio module
-    printf("About to open audio module\n");
+    printf("1. About to open audio module\n");
     luaL_register(L, "chip", NULL);  // Create empty 'chip' table
+    printf("2. Created chip table\n");
     luaopen_audio(L);  // This will populate the 'chip' table with functions
-    printf("Audio module loaded successfully\n");
+    printf("3. Audio module loaded successfully\n");
 
     // Load and run the script
     printf("About to load script\n");
