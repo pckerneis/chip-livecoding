@@ -71,25 +71,44 @@ int audio_init(void) {
     const char *preferredDeviceName = "default";
     int device = paNoDevice;
 
-    // Try to find a preferred device first
+    // In audio_init, after listing devices, add this:
+    printf("\nTrying to find a working audio device...\n");
     for (int i = 0; i < numDevices; i++) {
         const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(i);
-        if (deviceInfo->maxOutputChannels > 0 && 
-            (strstr(deviceInfo->name, preferredDeviceName) != NULL)) {
-            device = i;
-            printf("Using preferred audio device: %s\n", deviceInfo->name);
-            break;
-        }
-    }
-
-    // If preferred device not found, fall back to any output device
-    if (device == paNoDevice) {
-        for (int i = 0; i < numDevices; i++) {
-            const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(i);
-            if (deviceInfo->maxOutputChannels > 0) {
+        if (!deviceInfo) continue;  // Skip if device info is null
+        
+        printf("Trying device %d: %s (in: %d, out: %d)\n", 
+            i, deviceInfo->name, 
+            deviceInfo->maxInputChannels, 
+            deviceInfo->maxOutputChannels);
+        
+        if (deviceInfo->maxOutputChannels > 0) {
+            PaStreamParameters outputParameters = {0};
+            outputParameters.device = i;
+            outputParameters.channelCount = 1;
+            outputParameters.sampleFormat = paFloat32;
+            outputParameters.suggestedLatency = deviceInfo->defaultLowOutputLatency;
+            outputParameters.hostApiSpecificStreamInfo = NULL;
+            
+            printf("  Trying to open with %dHz, %d frames/buffer...\n", 
+                audio_state.sample_rate, audio_state.buffer_size);
+            
+            PaError err = Pa_OpenStream(
+                &stream,
+                NULL, // No input
+                &outputParameters,
+                audio_state.sample_rate,
+                audio_state.buffer_size,
+                paNoFlag,  // Try without any special flags first
+                audio_callback,
+                &audio_state);
+                
+            if (err == paNoError) {
+                printf("Successfully opened device %d: %s\n", i, deviceInfo->name);
                 device = i;
-                printf("Falling back to audio device: %s\n", deviceInfo->name);
                 break;
+            } else {
+                printf("  Failed to open device: %s\n", Pa_GetErrorText(err));
             }
         }
     }
