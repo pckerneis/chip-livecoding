@@ -144,7 +144,7 @@ int audio_init(void) {
 
 // Process audio (called in the main loop)
 int audio_process(void) {
-    printf("Audio process called\n");
+    // printf("Audio process called\n");
     if (!audio_initialized) {
         printf("Audio not initialized\n");
         return 1;
