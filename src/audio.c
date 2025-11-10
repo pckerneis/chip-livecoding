@@ -119,32 +119,6 @@ int audio_init(void) {
         return 1;
     }
     
-    // Set up output parameters
-    PaStreamParameters outputParameters;
-    memset(&outputParameters, 0, sizeof(outputParameters));
-    outputParameters.device = device;
-    outputParameters.channelCount = 1;  // Mono output
-    outputParameters.sampleFormat = paFloat32;
-    outputParameters.suggestedLatency = Pa_GetDeviceInfo(device)->defaultLowOutputLatency;
-    outputParameters.hostApiSpecificStreamInfo = NULL;
-    
-    // Open stream
-    err = Pa_OpenStream(
-        &stream,
-        NULL, // No input
-        &outputParameters,
-        audio_state.sample_rate,
-        audio_state.buffer_size,
-        paClipOff,  // We won't output out of range samples so don't bother clipping them
-        audio_callback,
-        &audio_state);
-        
-    if (err != paNoError) {
-        fprintf(stderr, "Error opening audio stream: %s\n", Pa_GetErrorText(err));
-        Pa_Terminate();
-        return 1;
-    }
-    
     // Start the stream
     err = Pa_StartStream(stream);
     if (err != paNoError) {
