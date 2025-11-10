@@ -75,11 +75,16 @@ int main(int argc, char *argv[]) {
     // }
 
     // Register custom Lua functions
+    printf("About to register chip library\n");
     luaL_register(L, "chip", NULL);
+
+    printf("About to open audio\n");
     luaopen_audio(L);
+    printf("About to set top\n");
     lua_settop(L, 0);
 
     // Load and run the script
+    printf("About to load script\n");
     if (luaL_dofile(L, argv[1]) != 0) {
         fprintf(stderr, "Error loading script: %s\n", lua_tostring(L, -1));
         lua_close(L);
