@@ -57,18 +57,30 @@ int audio_init(void) {
     audio_state.time = 0.0;
     audio_state.volume = 0.5f; // Default volume
     
-    // Get default output device
-    PaDeviceIndex device = Pa_GetDefaultOutputDevice();
-    if (device == paNoDevice) {
-        fprintf(stderr, "No default output device found\n");
-        Pa_Terminate();
-        return 1;
+    // List available devices
+    printf("Available audio devices:\n");
+    int numDevices = Pa_GetDeviceCount();
+    for (int i = 0; i < numDevices; i++) {
+        const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(i);
+        printf("%d: %s (in: %d, out: %d)\n", 
+               i, deviceInfo->name, 
+               deviceInfo->maxInputChannels, 
+               deviceInfo->maxOutputChannels);
     }
     
-    // Get device info
-    const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(device);
-    if (!deviceInfo) {
-        fprintf(stderr, "Failed to get device info\n");
+    // Try to find a suitable output device
+    PaDeviceIndex device = paNoDevice;
+    for (int i = 0; i < numDevices; i++) {
+        const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(i);
+        if (deviceInfo->maxOutputChannels > 0) {
+            device = i;
+            printf("Using audio device: %s\n", deviceInfo->name);
+            break;
+        }
+    }
+    
+    if (device == paNoDevice) {
+        fprintf(stderr, "Error: No suitable output device found\n");
         Pa_Terminate();
         return 1;
     }
@@ -76,32 +88,33 @@ int audio_init(void) {
     // Set up output parameters
     PaStreamParameters outputParameters;
     memset(&outputParameters, 0, sizeof(outputParameters));
-    outputParameters.channelCount = 1; // Mono output
     outputParameters.device = device;
+    outputParameters.channelCount = 1;  // Mono output
+    outputParameters.sampleFormat = paFloat32;
+    outputParameters.suggestedLatency = Pa_GetDeviceInfo(device)->defaultLowOutputLatency;
     outputParameters.hostApiSpecificStreamInfo = NULL;
-    outputParameters.sampleFormat = paFloat32; // 32-bit floating point output
-    outputParameters.suggestedLatency = deviceInfo->defaultLowOutputLatency;
     
-    // Open audio stream
-    err = Pa_OpenStream(&stream,
-                       NULL,           // No input
-                       &outputParameters, // Output parameters
-                       SAMPLE_RATE,
-                       FRAMES_PER_BUFFER,
-                       paClipOff,      // We'll handle clipping
-                       audio_callback,
-                       &audio_state);
-                              
+    // Open stream
+    err = Pa_OpenStream(
+        &stream,
+        NULL, // No input
+        &outputParameters,
+        audio_state.sample_rate,
+        audio_state.buffer_size,
+        paClipOff,  // We won't output out of range samples so don't bother clipping them
+        audio_callback,
+        &audio_state);
+        
     if (err != paNoError) {
-        fprintf(stderr, "PortAudio error: %s\n", Pa_GetErrorText(err));
+        fprintf(stderr, "Error opening audio stream: %s\n", Pa_GetErrorText(err));
         Pa_Terminate();
         return 1;
     }
     
-    // Start audio stream
+    // Start the stream
     err = Pa_StartStream(stream);
     if (err != paNoError) {
-        fprintf(stderr, "PortAudio error: %s\n", Pa_GetErrorText(err));
+        fprintf(stderr, "Error starting audio stream: %s\n", Pa_GetErrorText(err));
         Pa_CloseStream(stream);
         Pa_Terminate();
         return 1;
