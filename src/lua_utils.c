@@ -124,6 +124,13 @@ int l_rndi(lua_State *L) {
     return 1;
 }
 
+// print(message)
+int l_print(lua_State *L) {
+    const char *message = luaL_checkstring(L, 1);
+    printf("%s\n", message);
+    return 0;
+}
+
 // Register all functions in the Lua state
 static const luaL_Reg chip_lib[] = {
     {"sin", l_sin},
@@ -134,6 +141,7 @@ static const luaL_Reg chip_lib[] = {
     {"rnd", l_rnd},
     {"rndf", l_rndf},
     {"rndi", l_rndi},
+    {"print", l_print},
     {NULL, NULL}
 };
 
