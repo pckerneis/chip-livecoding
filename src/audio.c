@@ -22,15 +22,7 @@
 #define PI 3.14159265358979323846
 
 // Audio state
-typedef struct {
-    lua_State *L;
-    double time;
-    int sample_rate;
-    int buffer_size;
-    float volume;
-} AudioState;
-
-static AudioState audio_state;
+AudioState audio_state = {0};
 static PaStream *stream = NULL;
 static int audio_initialized = 0;
 

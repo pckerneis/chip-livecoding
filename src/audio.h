@@ -3,6 +3,16 @@
 
 #include <lua.h>
 
+typedef struct AudioState {
+    lua_State *L;
+    double time;
+    int sample_rate;
+    int buffer_size;
+    float volume;
+} AudioState;
+
+extern AudioState audio_state;
+
 // Initialize audio system
 int audio_init(void);
 
